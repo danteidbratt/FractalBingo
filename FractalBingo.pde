@@ -1,23 +1,21 @@
 int centerX;
 int centerY;
 
-int numOfCorners = 3;
-
-int radius = 256;
-int radiusIncrement = 1;
-float radiusMultiplier = 2;
-
-float ratio = 0.5;
-float ratioIncrement = 0.01;
-
+float ratio = 0.97;
+int axes = 50;
+float radius = 60;
+float radiusMultiplier = 1.045;
 int dpf = 1000;
+
+float ratioIncrement = 0.01;
 int dpfIncrement = 50;
 int fallbackDpf = 0;
-
 float orientation;
 boolean orientationToggle = false;
 
 boolean running = false;
+color defaultColor = color(255);
+color currentColor = defaultColor;
 
 Dot[] corners;
 Dot previousDot;
@@ -31,7 +29,7 @@ void setup() {
   centerX = width / 2;
   centerY = height / 2;
   background(20);
-  stroke(255);
+  stroke(currentColor);
   fill(20);
   strokeWeight(1);
   setCorners();
@@ -63,27 +61,30 @@ void generateDot() {
 }
 
 void drawTextBox() {
+  stroke(defaultColor);
   fill(20);
-  rect(15, 15, 160, 135);
+  rect(15, 15, 190, 165);
   fill(255);
   text(
-    String.format("Ratio: %s\nAxes: %s\nRadius: %s\nDPF: %s", 
-    String.format("%.2f", ratio), 
-    numOfCorners, 
+    String.format("Ratio: %s\nAxes: %s\nRadius: %.1f\nMultiplier: %.3f\nDensity: %s", 
+    String.format("%.3f", ratio), 
+    axes, 
     radius, 
+    radiusMultiplier, 
     dpf), 
     30, 45);
+  stroke(currentColor);
 }
 
 void setOrientation() {
-  orientation = radians(90 + (orientationToggle ? 180.0 / numOfCorners : 0));
+  orientation = radians(90 + (orientationToggle ? 180.0 / axes : 0));
 }
 
 void setCorners() {
-  Dot[] temp = new Dot[numOfCorners];
+  Dot[] temp = new Dot[axes];
   setOrientation();
-  float rad = radians(360.0 / numOfCorners);
-  for (int i = 0; i < numOfCorners; i++) {
+  float rad = radians(360.0 / axes);
+  for (int i = 0; i < axes; i++) {
     float angle = i * rad;
     temp[i] = new Dot(
       centerX + cos(angle - orientation) * radius, 
@@ -94,7 +95,7 @@ void setCorners() {
 }
 
 Dot getRandomCorner() {
-  return corners[(int) random(numOfCorners)];
+  return corners[(int) random(axes)];
 }
 
 Dot calcNewDot(Dot previous, Dot corner) {
@@ -103,58 +104,150 @@ Dot calcNewDot(Dot previous, Dot corner) {
   return new Dot(previous.x + x, previous.y + y);
 }
 
-void pause() {
-  int temp = dpf;
-  dpf = fallbackDpf;
-  fallbackDpf = temp;
+color randomColor() {
+  return color(randomRGB(), randomRGB(), randomRGB());
+}
+
+int randomRGB() {
+  return (int) random(256);
 }
 
 void keyPressed() {
   if (key == ' ') {
     running = !running;
   } else if (keyCode == UP) {
-    ratio += ratioIncrement;
+    addRatio();
   } else if (keyCode == DOWN) {
-    if (ratio > ratioIncrement) {
-      ratio -= ratioIncrement;
-    }
+    subtractRatio();
   } else if (keyCode == LEFT) {
-    if (numOfCorners > 3) {
-      numOfCorners--;
-      setCorners();
-    }
+    subtractCorner();
   } else if (keyCode == RIGHT) {
-    numOfCorners++;
-    setCorners();
-  } else if (key == 'd') {
-    if (radius % radiusMultiplier == 0) {
-      radius /= radiusMultiplier;
-      setCorners();
-    }
+    addCorner();
+  } else if (key == 'l') {
+    addRadiusMultiplier();
+  } else if (key == 'k') {
+    subtractRadiusMultiplier();
+  } else if (key == 'n') {
+    divideRadius();
   } else if (key == 'm') {
-    radius *= radiusMultiplier;
-    setCorners();
+    multiplyRadius();
   } else if (key == '-') {
-    if (radius > radiusIncrement) {
-      radius -= radiusIncrement;
-      setCorners();
-    }
+    subtractRadius();
   } else if (key == '+') {
-    radius += radiusIncrement;
-    setCorners();
+    addRadius();
   } else if (key == '.') {
-    if (dpf != 0) {
-      dpf += dpfIncrement;
-    }
+    addDensity();
   } else if (key == ',') {
-    if (dpf > dpfIncrement) {
-      dpf -= dpfIncrement;
-    }
+    subtractDensity();
   } else if (key == 'o') {
-    orientationToggle = !orientationToggle;
-    setCorners();
+    toggleOrientation();
   } else if (key == 'p') {
     pause();
+  } else if (key == 'c') {
+    setRandomColor();
+  } else if (key == 'w') {
+    setDefaultColor();
+  } else if (key == 'x') {
+    runScript();
+  } else {
+    return;
   }
   loop();
+}
+
+void addCorner() {
+  axes++;
+  setCorners();
+}
+
+void subtractCorner() {
+  if (axes > 3) {
+    axes--;
+    setCorners();
+  }
+}
+
+void addRatio() {
+  ratio += ratioIncrement;
+}
+
+void subtractRatio() {
+  if (ratio > ratioIncrement) {
+    ratio -= ratioIncrement;
+  }
+}
+
+void addRadius() {
+  radius++;
+  setCorners();
+}
+
+void subtractRadius() {
+  if (radius > 1) {
+    radius--;
+    setCorners();
+  }
+}
+
+void multiplyRadius() {
+  radius *= radiusMultiplier;
+  setCorners();
+}
+
+void divideRadius() {
+  radius /= radiusMultiplier;
+  setCorners();
+}
+
+void addRadiusMultiplier() {
+  radiusMultiplier += 0.01;
+}
+
+void subtractRadiusMultiplier() {
+  radiusMultiplier -= 0.01;
+}
+
+void addDensity() {
+  if (dpf != 0) {
+    dpf += dpfIncrement;
+  }
+}
+
+void subtractDensity() {
+  if (dpf > dpfIncrement) {
+    dpf -= dpfIncrement;
+  }
+}
+
+void toggleOrientation() {
+  orientationToggle = !orientationToggle;
+  setCorners();
+}
+
+void pause() {
+  int temp = dpf;
+  dpf = fallbackDpf;
+  fallbackDpf = temp;
+}
+
+void setRandomColor() {
+  currentColor = randomColor();
+  stroke(currentColor);
+}
+
+void setDefaultColor() {
+  currentColor = color(255);
+  stroke(currentColor);
+}
+
+void runScript() {
+  if (axes > 3) {
+    pause();
+    toggleOrientation();
+    multiplyRadius();
+    // setRandomColor();
+    subtractCorner();
+    pause();
+    redraw();
+  }
 }
